@@ -1,53 +1,54 @@
-
+// vim: ts=2:sw=2:et
+const GLib = imports.gi.GLib;
+const Lang = imports.lang;
 const St = imports.gi.St;
+
 const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
+const PanelMenu = imports.ui.panelMenu;
+const PopupMenu = imports.ui.popupMenu;
 
-let text, button;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const Typer = Me.imports.typer.Typer;
 
-function _hideHello() {
-    Main.uiGroup.remove_actor(text);
-    text = null;
+const ICON_NAME = 'channel-secure-symbolic';
+// Pause between button click and trying to type the string
+const INITIAL_PAUSE = 500;
+
+class LastPassButton extends PanelMenu.Button {
+  constructor() {
+    super(St.Align.START, 'LastPass');
+
+    let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
+    this.icon = new St.Icon({ icon_name: ICON_NAME, style_class: 'system-status-icon lastpass-icon' });
+    hbox.add_child(this.icon);
+    this.actor.add_actor(hbox);
+
+    this.typer = new Typer();
+
+    this._createMenu();
+  }
+
+  _createMenu() {
+    this.menu.addAction('Test', Lang.bind(this, function() {
+      this.icon.add_style_class_name('lastpass-typing');
+      GLib.timeout_add(GLib.PRIORITY_DEFAULT, INITIAL_PAUSE, Lang.bind(this, function() {
+        this.typer.type('Test', Lang.bind(this, function() {
+          this.icon.remove_style_class_name('lastpass-typing');
+        }));
+        return GLib.SOURCE_REMOVE;
+      }));
+    }));
+  }
 }
 
-function _showHello() {
-    if (!text) {
-        text = new St.Label({ style_class: 'helloworld-label', text: "Hello, world!" });
-        Main.uiGroup.add_actor(text);
-    }
-
-    text.opacity = 255;
-
-    let monitor = Main.layoutManager.primaryMonitor;
-
-    text.set_position(monitor.x + Math.floor(monitor.width / 2 - text.width / 2),
-                      monitor.y + Math.floor(monitor.height / 2 - text.height / 2));
-
-    Tweener.addTween(text,
-                     { opacity: 0,
-                       time: 2,
-                       transition: 'easeOutQuad',
-                       onComplete: _hideHello });
-}
-
-function init() {
-    button = new St.Bin({ style_class: 'panel-button',
-                          reactive: true,
-                          can_focus: true,
-                          x_fill: true,
-                          y_fill: false,
-                          track_hover: true });
-    let icon = new St.Icon({ icon_name: 'system-run-symbolic',
-                             style_class: 'system-status-icon' });
-
-    button.set_child(icon);
-    button.connect('button-press-event', _showHello);
-}
-
+let lastPassButton;
 function enable() {
-    Main.panel._rightBox.insert_child_at_index(button, 0);
+  lastPassButton = new LastPassButton();
+  Main.panel.addToStatusArea('lastPassButton', lastPassButton);
 }
 
 function disable() {
-    Main.panel._rightBox.remove_child(button);
+  lastPassButton.destroy();
+  lastPassButton = null;
 }
