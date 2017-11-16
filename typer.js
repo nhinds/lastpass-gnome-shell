@@ -7,7 +7,7 @@ const Lang = imports.lang;
 // Delay between each keydown/keyup/keydown/... event
 const DELAY_BETWEEN_HALF_KEYSTROKES = 8;
 
-class Typer {
+var Typer = class Typer {
   constructor() {
     let deviceManager = Clutter.DeviceManager.get_default();
     this._virtualKeyboard = deviceManager.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
