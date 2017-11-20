@@ -18,7 +18,7 @@ var LastPassClient = class LastPassClient {
     this._crypto = new Crypto();
   }
 
-  async getVault(username, password, cache = false) {
+  async getVault(username, password) {
     let iterations = await this._protocol.iterations(username);
     let sessionId = await this._protocol.login(username, this._crypto.hash(username, password, iterations), iterations);
     let rawAccounts = await this._protocol.accounts(sessionId);
