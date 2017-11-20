@@ -3,3 +3,16 @@
   /* color: rgba(255,0,0,1.0); */
   color: #a43434;
 }
+
+.lastpass-login-dialog-table {
+  spacing-rows: 15px;
+  spacing-columns: 1em;
+}
+
+.popup-menu-item .lastpass-favourite-button StIcon {
+  icon-size:16px;
+}
+
+.lastpass-menu {
+  min-width: 400px;
+}

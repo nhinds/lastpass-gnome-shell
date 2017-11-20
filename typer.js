@@ -2,7 +2,7 @@
 const Clutter = imports.gi.Clutter;
 const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
-const Lang = imports.lang;
+const Signals = imports.signals;
 
 // Delay between each keydown/keyup/keydown/... event
 const DELAY_BETWEEN_HALF_KEYSTROKES = 8;
@@ -20,7 +20,7 @@ var Typer = class Typer {
     }
   }
 
-  type(str, callback) {
+  type(str) {
     let actions = [];
     for (let chr of str) {
       let codePoint = chr.codePointAt(0); // FIXME Maybe not a sensible thing to do for all unicode?
@@ -31,19 +31,19 @@ var Typer = class Typer {
       );
     }
     if (actions.length > 0) {
-      GLib.timeout_add(GLib.PRIORITY_DEFAULT, DELAY_BETWEEN_HALF_KEYSTROKES, Lang.bind(this, function() {
+      GLib.timeout_add(GLib.PRIORITY_DEFAULT, DELAY_BETWEEN_HALF_KEYSTROKES, () => {
         let action = actions.shift();
         this._notifyKeyval(action.keyVal, action.state);
 
         if (actions.length > 0) {
           return GLib.SOURCE_CONTINUE;
         } else {
-          callback();
+          this.emit('finished');
           return GLib.SOURCE_REMOVE;
         }
-      }));
+      });
     } else {
-      callback();
+      this.emit('finished');
     }
   }
 
@@ -99,3 +99,4 @@ var Typer = class Typer {
     return keys[0]; // FIXME should check if this key is in the current "group", but don't know how to check that
   }
 }
+Signals.addSignalMethods(Typer.prototype)
