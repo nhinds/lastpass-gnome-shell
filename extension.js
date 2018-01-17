@@ -17,6 +17,7 @@ const Signals = imports.signals;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const Convenience = Me.imports.convenience;
 const Typer = Me.imports.typer.Typer;
 const LastPassClient = Me.imports.lastpass.client.LastPassClient;
 
@@ -37,8 +38,9 @@ class LastPassButton extends PanelMenu.Button {
     this._typer.connect('finished', () => this.icon.remove_style_class_name('lastpass-typing'));
     this._client = new LastPassClient();
 
-    // TODO read from gsettings?
-    this._favouriteAccounts = new Set();
+    this._settings = Convenience.getSettings();
+
+    this._favouriteAccounts = new Set(this._settings.get_strv('favourite-accounts'));
     this._vault = null;
     this._accounts = null;
 
@@ -132,11 +134,13 @@ class LastPassButton extends PanelMenu.Button {
   }
 
   _setFavourited(accountName, favourited) {
-    // TODO save somewhere
     if (favourited) {
       this._favouriteAccounts.add(accountName);
     } else {
       this._favouriteAccounts.delete(accountName);
+    }
+    if (!this._settings.set_strv('favourite-accounts', Array.from(this._favouriteAccounts))) {
+      print('Warning: unable to save favourite accounts');
     }
 
     // FIXME it's kind of annoying to update the top menu section while clicking in the bottom section, maybe delay this until the next time the menu opens?
@@ -149,12 +153,16 @@ class LastPassButton extends PanelMenu.Button {
     if (accounts != null) {
       return accounts;
     }
+    if (!username) {
+      username = this._settings.get_string('last-username');
+    }
     let vault = this._vault;
     let credentials;
     if (vault == null) {
-      // TODO retrieve last username from gsettings
       credentials = await ModalLoginDialog.prompt({ initialUsername: username, errorMessage: errorMessage });
-      // TODO store last username in gsettings
+      if (username != credentials.username) {
+        this._settings.set_string('last-username', credentials.username);
+      }
       try {
         // TODO better feedback while logging in - keep the modal dialog open?
         vault = await this._client.getVault(credentials.username, credentials.password);

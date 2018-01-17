@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schemalist>
+  <schema path="/com/nhinds/lastpass-gnome-shell/" id="com.nhinds.lastpass-gnome-shell">
+    <key name="favourite-accounts" type="as">
+      <default>[]</default>
+      <summary>Favourite accounts</summary>
+      <description>
+        Array of account names to show as favourites in the lastpass dropdown menu.
+      </description>
+    </key>
+    <key name="last-username" type="s">
+      <default>''</default>
+      <summary>Last username</summary>
+      <description>
+        Last username used to log into lastpass.
+      </description>
+    </key>
+  </schema>
+</schemalist>

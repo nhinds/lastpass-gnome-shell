@@ -1,1 +1,9 @@
-{"name": "LastPass", "description": "Types passwords from LastPass into desktop applications", "uuid": "lastpass@nhinds.com", "shell-version": ["3.26.1"]}
+{
+  "name": "LastPass",
+  "description": "Types passwords from LastPass into desktop applications",
+  "uuid": "lastpass@nhinds.com",
+  "settings-schema": "com.nhinds.lastpass-gnome-shell",
+  "shell-version": [
+    "3.26.1"
+  ]
+}
