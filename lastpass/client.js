@@ -1,4 +1,6 @@
 // vim: ts=2:sw=2:et
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Soup = imports.gi.Soup;
 const ByteArray = imports.byteArray;
 
@@ -24,8 +26,32 @@ var LastPassClient = class LastPassClient {
     let rawAccounts = await this._protocol.accounts(sessionId);
     await this._protocol.logout(sessionId);
 
+    return this._parseAccounts(rawAccounts, username, iterations);
+  }
+
+
+  // In: file:Gio.File. Out: Vault
+  async readVaultFromFile(file) {
+    let contents = await new Promise((resolve, reject) => {
+      file.load_contents_async(null, (file, result) => {
+        let [ok, contents] = file.load_contents_finish(result);
+        if (ok) {
+          resolve(contents);
+        } else {
+          reject();
+        }
+      });
+    });
+
+    // TODO place the de/serialization somewhere more sensible
+    let variant = GLib.Variant.new_from_bytes(new GLib.VariantType('(siay)'), contents, false);
+    let [username, iterations, rawAccounts] = variant.deep_unpack();
+    return this._parseAccounts(rawAccounts, username, iterations);
+  }
+
+  _parseAccounts(rawAccounts, username, iterations) {
     let accounts = new Parser(rawAccounts).parse();
-    return new Vault(accounts, username, iterations, this._crypto);
+    return new Vault(rawAccounts, accounts, username, iterations, this._crypto);
   }
 
   toString() {
@@ -34,7 +60,8 @@ var LastPassClient = class LastPassClient {
 }
 
 class Vault {
-  constructor(accounts, username, iterations, crypto) {
+  constructor(rawAccounts, accounts, username, iterations, crypto) {
+    this._rawAccounts = rawAccounts;
     this._accounts = accounts;
     this._username = username;
     this._iterations = iterations;
@@ -53,6 +80,24 @@ class Vault {
     });
 
     return accountsHash;
+  }
+
+  // In: file:Gio.File
+  async write(file) {
+    return new Promise((resolve, reject) => {
+      // TODO include login time
+      // TODO place the de/serialization somewhere more sensible
+      let variant = new GLib.Variant('(siay)', [this._username, this._iterations, this._rawAccounts]);
+      let serialized = variant.get_data_as_bytes();
+      file.replace_contents_bytes_async(serialized, null, false, Gio.FileCreateFlags.PRIVATE, null, (file, result) => {
+        let ok = file.replace_contents_finish(result);
+        if (ok) {
+          resolve();
+        } else {
+          reject(new Error(`Could not write vault to ${filename}`));
+        }
+      });
+    });
   }
 
   toString() {

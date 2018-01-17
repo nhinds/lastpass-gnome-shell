@@ -45,6 +45,10 @@ class LastPassButton extends PanelMenu.Button {
     this._accounts = null;
 
     this._createMenu();
+
+    this._readVault().catch(error => {
+      print(`Error loading vault from disk: ${error.message}`);
+    });
   }
 
   _createMenu() {
@@ -59,6 +63,15 @@ class LastPassButton extends PanelMenu.Button {
     this.otherSection = new PopupMenu.PopupMenuSection();
     this.menu.addMenuItem(this.otherSection);
     this._createOtherMenuItems();
+
+    this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+    this.menu.addAction('Refresh Vault', () => {
+      this._clearVault();
+      this._openVault(false).catch(error => {
+        print(`Could not open LastPass vault: ${error.message}`);
+      });
+    });
   }
 
   _createFavouriteMenuItems() {
@@ -167,6 +180,8 @@ class LastPassButton extends PanelMenu.Button {
         // TODO better feedback while logging in - keep the modal dialog open?
         vault = await this._client.getVault(credentials.username, credentials.password);
         this._vault = vault;
+        // TODO preference to skip saving the vault?
+        await this._saveVault();
       } catch (e) {
         // retry from the start by reopening the login dialog
         return this._openVault(cacheWhileMenuOpen, credentials.username, e.message);
@@ -197,6 +212,29 @@ class LastPassButton extends PanelMenu.Button {
       });
     }
     return accounts;
+  }
+
+  async _saveVault() {
+    try {
+      let cacheDirectory = Gio.file_new_for_path(GLib.get_user_cache_dir()).get_child(Me.uuid);
+      if (GLib.mkdir_with_parents(cacheDirectory.get_path(), parseInt('0755', 8)) != 0) {
+        throw new Error(`Could not create cache directory ${cacheDirectory.get_path()}`);
+      }
+      let vaultFile = cacheDirectory.get_child('vault');
+      await this._vault.write(vaultFile);
+    } catch (e) {
+      print(`Error saving vault: ${e.message}`);
+    }
+  }
+
+  async _readVault() {
+    // TODO commonize
+    let cacheDirectory = Gio.file_new_for_path(GLib.get_user_cache_dir()).get_child(Me.uuid);
+    let vaultFile = cacheDirectory.get_child('vault');
+    if (vaultFile.query_exists(null)) {
+      // TODO check last write timestamp?
+      this._vault = await this._client.readVaultFromFile(vaultFile);
+    }
   }
 
   _getAccountDisplayName(accountName, username) {
