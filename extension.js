@@ -1,11 +1,11 @@
 // vim: ts=2:sw=2:et
 const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
+const GObject = imports.gi.GObject;
 const Gio = imports.gi.Gio;
 const Pango = imports.gi.Pango;
 const St = imports.gi.St;
 
-const Lang = imports.lang;
 const Dialog = imports.ui.dialog;
 const Main = imports.ui.main;
 const ModalDialog = imports.ui.modalDialog;
@@ -25,9 +25,10 @@ const ICON_NAME = 'channel-secure-symbolic';
 // Pause between button click and trying to type the string
 const INITIAL_PAUSE = 500;
 
+var LastPassButton = GObject.registerClass(
 class LastPassButton extends PanelMenu.Button {
-  constructor() {
-    super(St.Align.START, 'LastPass');
+  _init() {
+    super._init(St.Align.START, 'LastPass');
 
     let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
     this.icon = new St.Icon({ icon_name: ICON_NAME, style_class: 'system-status-icon lastpass-icon' });
@@ -271,7 +272,7 @@ class LastPassButton extends PanelMenu.Button {
       return GLib.SOURCE_REMOVE;
     });
   }
-}
+});
 
 class ModalLoginDialog extends ModalDialog.ModalDialog {
   static async prompt(params) {
@@ -417,6 +418,8 @@ function enable() {
 }
 
 function disable() {
-  lastPassButton.destroy();
-  lastPassButton = null;
+  if (lastPassButton) {
+    lastPassButton.destroy();
+    lastPassButton = null;
+  }
 }

@@ -5,7 +5,7 @@ const GLib = imports.gi.GLib;
 const Signals = imports.signals;
 
 // Delay between each keydown/keyup/keydown/... event
-const DELAY_BETWEEN_HALF_KEYSTROKES = 15; // TODO make this configurable
+const DELAY_BETWEEN_HALF_KEYSTROKES = 20; // TODO make this configurable
 
 var Typer = class Typer {
   constructor() {
