@@ -21,9 +21,13 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 const Typer = Me.imports.typer.Typer;
+const HistoryTracker = Me.imports.history_tracker.HistoryTracker;
 const LastPassClient = Me.imports.lastpass.client.LastPassClient;
 
 const ICON_NAME = 'channel-secure-symbolic';
+
+// TODO make this configurable
+const enableHistory = true;
 
 var LastPassButton = GObject.registerClass(
 class LastPassButton extends PanelMenu.Button {
@@ -40,6 +44,7 @@ class LastPassButton extends PanelMenu.Button {
     this._client = new LastPassClient();
 
     this._settings = Convenience.getSettings();
+    this._historyTracker = new HistoryTracker();
 
     this._favouriteAccounts = new Set(this._settings.get_strv('favourite-accounts'));
     this._vault = null;
@@ -63,6 +68,13 @@ class LastPassButton extends PanelMenu.Button {
 
     this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+    if (enableHistory) {
+      this._historySection = new PopupMenu.PopupMenuSection();
+      this.menu.addMenuItem(this._historySection);
+
+      this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem())
+    }
+
     this.otherSection = new PopupMenu.PopupMenuSection();
     this.menu.addMenuItem(this.otherSection);
     this._createOtherMenuItems();
@@ -85,7 +97,7 @@ class LastPassButton extends PanelMenu.Button {
       if (accounts != null && accounts.hasOwnProperty(accountName)) {
         username = accounts[accountName].username;
       }
-      this._addAccountItem(this.favouriteSection, accountName, username);
+      this._addAccountItem(this.favouriteSection, accountName, username, this._favouriteButton);
     }
   }
 
@@ -101,7 +113,7 @@ class LastPassButton extends PanelMenu.Button {
         let sortedAccountNames = Object.keys(accounts).sort();
         for (let accountName of sortedAccountNames) {
           let account = accounts[accountName];
-          this._addAccountItem(otherMenu, accountName, account.username);
+          this._addAccountItem(otherMenu, accountName, account.username, this._favouriteButton);
         }
 
         this.menu.open();
@@ -115,12 +127,69 @@ class LastPassButton extends PanelMenu.Button {
     });
   }
 
-  _addAccountItem(menu, accountName, username) {
+  _addAccountItem(menu, accountName, username, buttonGenerator) {
     let accountItem = menu.addAction(this._getAccountDisplayName(accountName, username), () => {
+      this._recordUsageOfItem(accountName, username);
       this._openVault(false).then(accounts => this._type(accounts[accountName].password)).catch(e => {
         print(`Error typing password: ${e.message}`);
       });
     });
+    
+    accountItem.actor.add_child(buttonGenerator.call(this, accountName, username));
+    return accountItem;
+  }
+
+  _recordUsageOfItem(accountName, username) {
+    // Short circut if history is not 
+    if (!enableHistory)
+      return;
+
+    // If the thing that was clicked on is a favourite item then don't add it to the history since then it would appear in the menu
+    // twice and look weird.
+    if (this._favouriteAccounts.has(accountName))
+      return;
+
+    this._historyTracker.trackAccess(accountName, username);
+
+    this._recreateHistoryMenu();
+  }
+
+  _recreateHistoryMenu() {
+    // Rebuild the history menu since it's hard to reliably remove elements from the menu without calling internal functions.
+    this._historySection.removeAll();
+    this._historyTracker.forEach((accountName, username) => this._addAccountItem(this._historySection, accountName, username, this._deleteButton));
+  }
+
+  _deleteButton(accountName, username) {
+    const deleteIcon = new St.Icon({icon_name: 'edit-delete-symbolic', style_class: 'system-status-icon' });
+    const deleteButton = new St.Button({
+      style_class: 'lastpass-delete-button',
+      x_fill: true,
+      x_expand: true,
+      y_expand: true,
+      can_focus: true,
+      child: deleteIcon
+    });
+
+    // There are two x-align properties in the hierarchy of St.Button, and trying to set this in the constructor has tries to set the wrong one
+    deleteButton.set_x_align(Clutter.ActorAlign.END);
+    deleteButton.connect('clicked', () => {
+      if (!this._historyTracker.removeEntry(accountName, username)) {
+        throw "item not found in tracker";
+      };
+      this._recreateHistoryMenu();
+    });
+    return deleteButton;
+  }
+
+  /**
+   * Create a favourite button which adds, or removes, items from the star-list
+   * 
+   * @param {string} accountName 
+   * @param {string} _
+   * @returns {St.Button} the button to added to the menu item.
+   */
+  _favouriteButton(accountName, _) { 
     let iconName = this._isFavourited(accountName) ? 'starred-symbolic' : 'non-starred-symbolic';
     let favouriteIcon = new St.Icon({ icon_name: iconName, style_class: 'system-status-icon' });
     let favouriteButton = new St.Button({
@@ -141,8 +210,7 @@ class LastPassButton extends PanelMenu.Button {
     });
     favouriteButton.connect('enter-event', () => favouriteIcon.icon_name = 'semi-starred-symbolic');
     favouriteButton.connect('leave-event', () => favouriteIcon.icon_name = iconName);
-    accountItem.actor.add_child(favouriteButton);
-    return accountItem;
+    return favouriteButton;
   }
 
   _isFavourited(accountName) {

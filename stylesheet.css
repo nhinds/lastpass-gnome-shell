@@ -9,7 +9,7 @@
   spacing-columns: 1em;
 }
 
-.popup-menu-item .lastpass-favourite-button StIcon {
+.popup-menu-item .lastpass-favourite-button StIcon, .popup-menu-item .lastpass-delete-button StIcon {
   icon-size:16px;
 }
 
