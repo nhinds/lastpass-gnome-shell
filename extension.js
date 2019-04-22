@@ -3,7 +3,9 @@ const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gio = imports.gi.Gio;
+const Meta = imports.gi.Meta;
 const Pango = imports.gi.Pango;
+const Shell = imports.gi.Shell;
 const St = imports.gi.St;
 
 const Dialog = imports.ui.dialog;
@@ -22,8 +24,6 @@ const Typer = Me.imports.typer.Typer;
 const LastPassClient = Me.imports.lastpass.client.LastPassClient;
 
 const ICON_NAME = 'channel-secure-symbolic';
-// Pause between button click and trying to type the string
-const INITIAL_PAUSE = 500;
 
 var LastPassButton = GObject.registerClass(
 class LastPassButton extends PanelMenu.Button {
@@ -46,6 +46,8 @@ class LastPassButton extends PanelMenu.Button {
     this._accounts = null;
 
     this._createMenu();
+    this._bindShortcuts();
+    this.connect('destroy', this._unBindShortcuts.bind(this));
 
     this._readVault().catch(error => {
       print(`Error loading vault from disk: ${error.message}`);
@@ -263,7 +265,7 @@ class LastPassButton extends PanelMenu.Button {
   _type(text) {
     this.icon.add_style_class_name('lastpass-typing');
 
-    this._oneOffTimer(INITIAL_PAUSE, () => this._typer.type(text));
+    this._oneOffTimer(this._settings.get_int('typing-initial-pause'), () => this._typer.type(text, this._settings.get_int('typing-half-delay')));
   }
 
   _oneOffTimer(pause, callback) {
@@ -271,6 +273,20 @@ class LastPassButton extends PanelMenu.Button {
       callback();
       return GLib.SOURCE_REMOVE;
     });
+  }
+
+  _bindShortcuts() {
+    Main.wm.addKeybinding(
+      'toggle-lastpass-menu',
+      this._settings,
+      Meta.KeyBindingFlags.NONE,
+      Shell.ActionMode.ALL,
+      () => this.menu.toggle()
+    );
+  }
+
+  _unBindShortcuts() {
+    Main.wm.removeKeybinding('toggle-lastpass-menu');
   }
 });
 

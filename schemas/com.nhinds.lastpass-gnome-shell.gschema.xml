@@ -15,5 +15,26 @@
         Last username used to log into lastpass.
       </description>
     </key>
+    <key name="toggle-lastpass-menu" type="as">
+      <default><![CDATA[['<Super><Shift>L']]]></default>
+      <summary>Toggle the lastpass menu</summary>
+      <description>
+        Key to toggle the lastpass menu
+      </description>
+    </key>
+    <key name="typing-half-delay" type="i">
+      <default>20</default>
+      <summary>Typing delay between half keystrokes</summary>
+      <description>
+        Delay between each keydown/keyup/keydown/... event
+      </description>
+    </key>
+    <key name="typing-initial-pause" type="i">
+      <default>500</default>
+      <summary>Typing initial pause</summary>
+      <description>
+        Pause between button click and trying to type the string
+      </description>
+    </key>
   </schema>
 </schemalist>

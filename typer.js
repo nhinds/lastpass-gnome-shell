@@ -4,9 +4,6 @@ const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const Signals = imports.signals;
 
-// Delay between each keydown/keyup/keydown/... event
-const DELAY_BETWEEN_HALF_KEYSTROKES = 20; // TODO make this configurable
-
 var Typer = class Typer {
   constructor() {
     let deviceManager = Clutter.DeviceManager.get_default();
@@ -20,7 +17,7 @@ var Typer = class Typer {
     }
   }
 
-  type(str) {
+  type(str, delayBetweenHalfKeystrokes) {
     let actions = [];
     for (let chr of str) {
       let codePoint = chr.codePointAt(0); // FIXME Maybe not a sensible thing to do for all unicode?
@@ -31,7 +28,7 @@ var Typer = class Typer {
       );
     }
     if (actions.length > 0) {
-      GLib.timeout_add(GLib.PRIORITY_DEFAULT, DELAY_BETWEEN_HALF_KEYSTROKES, () => {
+      GLib.timeout_add(GLib.PRIORITY_DEFAULT, delayBetweenHalfKeystrokes, () => {
         let action = actions.shift();
         this._notifyKeyval(action.keyVal, action.state);
 
