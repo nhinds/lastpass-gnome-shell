@@ -37,7 +37,7 @@ class LastPassButton extends PanelMenu.Button {
     let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
     this.icon = new St.Icon({ icon_name: ICON_NAME, style_class: 'system-status-icon lastpass-icon' });
     hbox.add_child(this.icon);
-    this.actor.add_actor(hbox);
+    actorFor(this).add_actor(hbox);
 
     this._typer = new Typer();
     this._typer.connect('finished', () => this.icon.remove_style_class_name('lastpass-typing'));
@@ -60,7 +60,7 @@ class LastPassButton extends PanelMenu.Button {
   }
 
   _createMenu() {
-    this.menu.actor.add_style_class_name('lastpass-menu');
+    actorFor(this.menu).add_style_class_name('lastpass-menu');
 
     this.favouriteSection = new PopupMenu.PopupMenuSection();
     this.menu.addMenuItem(this.favouriteSection);
@@ -135,7 +135,7 @@ class LastPassButton extends PanelMenu.Button {
       });
     });
 
-    accountItem.actor.add_child(buttonGenerator.call(this, accountName, username));
+    actorFor(accountItem).add_child(buttonGenerator.call(this, accountName, username));
     return accountItem;
   }
 
@@ -495,6 +495,16 @@ class ModalLoginDialog {
   }
 }
 Signals.addSignalMethods(ModalLoginDialog.prototype);
+
+function actorFor(obj) {
+  // For version 3.34 and above, many objects have been migrated to Clutter.Actor subclasses.
+  // CallingClutter.Actor.actor **works**, but logs a deprecation warning.
+  if (obj instanceof Clutter.Actor) {
+    return obj;
+  } else {
+    return obj.actor;
+  }
+}
 
 let lastPassButton;
 function enable() {
