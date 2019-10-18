@@ -134,13 +134,13 @@ class LastPassButton extends PanelMenu.Button {
         print(`Error typing password: ${e.message}`);
       });
     });
-    
+
     accountItem.actor.add_child(buttonGenerator.call(this, accountName, username));
     return accountItem;
   }
 
   _recordUsageOfItem(accountName, username) {
-    // Short circut if history is not 
+    // Short circut if history is not
     if (!enableHistory)
       return;
 
@@ -184,12 +184,12 @@ class LastPassButton extends PanelMenu.Button {
 
   /**
    * Create a favourite button which adds, or removes, items from the star-list
-   * 
-   * @param {string} accountName 
+   *
+   * @param {string} accountName
    * @param {string} _
    * @returns {St.Button} the button to added to the menu item.
    */
-  _favouriteButton(accountName, _) { 
+  _favouriteButton(accountName, _) {
     let iconName = this._isFavourited(accountName) ? 'starred-symbolic' : 'non-starred-symbolic';
     let favouriteIcon = new St.Icon({ icon_name: iconName, style_class: 'system-status-icon' });
     let favouriteButton = new St.Button({
