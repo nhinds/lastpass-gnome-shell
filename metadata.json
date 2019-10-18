@@ -4,6 +4,7 @@
   "uuid": "lastpass@nhinds.com",
   "settings-schema": "com.nhinds.lastpass-gnome-shell",
   "shell-version": [
-    "3.32"
+    "3.32",
+    "3.34"
   ]
 }

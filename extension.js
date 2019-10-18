@@ -358,7 +358,7 @@ class LastPassButton extends PanelMenu.Button {
   }
 });
 
-class ModalLoginDialog extends ModalDialog.ModalDialog {
+class ModalLoginDialog {
   static async prompt(params) {
     let dialog = new ModalLoginDialog(params);
     return new Promise((resolve, reject) => {
@@ -372,7 +372,7 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
 
   /* params={ initialUsername:String, errorMessage:String or `false` for no error, reprompt:Boolean } */
   constructor(params) {
-    super({ styleClass: 'prompt-dialog' });
+    this.dialog = new ModalDialog.ModalDialog({ styleClass: 'prompt-dialog' });
     params = Params.parse(params, { initialUsername: '', errorMessage: false, reprompt: false });
     this._reprompt = params.reprompt;
 
@@ -384,7 +384,7 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
       contentParams.body = params.errorMessage;
     }
     this._content = new Dialog.MessageDialogContent(contentParams);
-    this.contentLayout.add(this._content);
+    this.dialog.contentLayout.add(this._content);
 
     let grid = new Clutter.GridLayout({ orientation: Clutter.Orientation.VERTICAL });
     let loginTable = new St.Widget({ style_class: 'lastpass-login-dialog-table', layout_manager: grid });
@@ -447,19 +447,19 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
 
     this._content.messageBox.add(loginTable);
 
-    this.addButton({
+    this.dialog.addButton({
       label: 'Cancel',
       key: Clutter.Escape,
       action: () => this._cancelLogin()
     });
-    this._loginButton = this.addButton({
+    this._loginButton = this.dialog.addButton({
       label: 'Login',
       default: true,
       action: () => this._doneLogin()
     });
 
     this._updateLoginButton();
-    this.setInitialKeyFocus(this._reprompt || params.initialUsername.length > 0 ? this._passwordEntry : this._usernameEntry);
+    this.dialog.setInitialKeyFocus(this._reprompt || params.initialUsername.length > 0 ? this._passwordEntry : this._usernameEntry);
 
     let sessionModeSignalId = Main.sessionMode.connect('updated', () => {
       if (!Main.sessionMode.isLocked)
@@ -467,9 +467,9 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
 
       this._cancelLogin();
     });
-    this.connect('closed', () => Main.sessionMode.disconnect(sessionModeSignalId));
+    this.dialog.connect('closed', () => Main.sessionMode.disconnect(sessionModeSignalId));
 
-    this.open();
+    this.dialog.open();
   }
 
   _isLoginValid() {
@@ -481,7 +481,7 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
   }
 
   _cancelLogin() {
-    this.close();
+    this.dialog.close();
     this.emit('cancelled');
   }
 
@@ -490,10 +490,11 @@ class ModalLoginDialog extends ModalDialog.ModalDialog {
       return;
     }
 
-    this.close();
+    this.dialog.close();
     this.emit('login', this._reprompt ? '' : this._usernameEntry.get_text(), this._passwordEntry.get_text(), false); // TODO "remember" functionality
   }
 }
+Signals.addSignalMethods(ModalLoginDialog.prototype);
 
 let lastPassButton;
 function enable() {
