@@ -349,8 +349,21 @@ class LastPassButton extends PanelMenu.Button {
       this._settings,
       Meta.KeyBindingFlags.NONE,
       Shell.ActionMode.ALL,
-      () => this.menu.toggle()
+      () => {
+        this.menu.toggle();
+        actorFor(this.menu).get_stage().set_key_focus(actorFor(this._itemToFocus()))
+      }
     );
+  }
+
+  _itemToFocus() {
+    if (this.favouriteSection.firstMenuItem) {
+      return this.favouriteSection.firstMenuItem;
+    }
+    if (enableHistory && this._historySection.firstMenuItem) {
+      return this._historySection.firstMenuItem;
+    }
+    return this.otherSection.firstMenuItem;
   }
 
   _unBindShortcuts() {
